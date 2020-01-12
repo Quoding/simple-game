@@ -8,6 +8,7 @@ WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+FPS = 7
 
 init_result = pygame.init()
 
@@ -19,15 +20,21 @@ pygame.display.set_caption("My simple game")
 
 # Set up
 game_running = True
-pos_x = 0
-pos_y = 0
+POS_X = 400
+POS_Y = 300
+vel_x = 0
+vel_y = 0
+score = 0
+
+clock = pygame.time.Clock()
+font = pygame.font.Font("freesansbold.ttf", 32)
+
 
 # Make the user controlled square spawn at pos_x, pos_y
-game_square = Square(pos_x, pos_y)
+game_square = Square(POS_X, POS_Y)
 
 # Spawn an objective square randomly on the canvas
 objective_square = Square(random.randint(0, 31) * 25, random.randint(0, 23) * 25)
-score = 0
 
 
 def preventOutOfBounds(square):
@@ -44,9 +51,20 @@ def preventOutOfBounds(square):
     return square
 
 
+def isOutOfBounds(square):
+    """Check to make sure that the player square isn't out of bounds. If he is, return True, else return False"""
+    if square.pos_x > 775:
+        return True
+    if square.pos_y > 575:
+        return True
+    if square.pos_x < 0:
+        return True
+    if square.pos_y < 0:
+        return True
+
+
 def gotObjective(game_square, obj_square):
-    """Check if player got the objective. If he did, change coordinates of the objective square
-    """
+    """Check if player got the objective. If he did, change coordinates of the objective square"""
     if game_square.pos_x == obj_square.pos_x and game_square.pos_y == obj_square.pos_y:
         obj_square.pos_x = random.randint(0, 31) * 25
         obj_square.pos_y = random.randint(0, 23) * 25
@@ -55,7 +73,7 @@ def gotObjective(game_square, obj_square):
 
 
 while game_running:
-    # Game content
+    clock.tick(FPS)
     for event in pygame.event.get():
         # Insures user can quit using the X button or exit on wms
         if event.type == pygame.QUIT:
@@ -64,20 +82,30 @@ while game_running:
             # Process keydown events
             if event.key == pygame.K_w:
                 print("Move forwards")
-                game_square.pos_y -= 25
+                game_square.vel_y = -25
+                game_square.vel_x = 0
             elif event.key == pygame.K_s:
                 print("Move backwards")
-                game_square.pos_y += 25
+                game_square.vel_y = 25
+                game_square.vel_x = 0
             elif event.key == pygame.K_a:
                 print("Move left")
-                game_square.pos_x -= 25
+                game_square.vel_x = -25
+                game_square.vel_y = 0
             elif event.key == pygame.K_d:
                 print("Move right")
-                game_square.pos_x += 25
+                game_square.vel_x = 25
+                game_square.vel_y = 0
 
     # Content here
+    game_square.pos_x += game_square.vel_x
+    game_square.pos_y += game_square.vel_y
     game_window.fill(WHITE)
-    preventOutOfBounds(game_square)
+    if isOutOfBounds(game_square):
+        game_running = False
+        break
+
+    # preventOutOfBounds(game_square)
     # print("Current position {} {}".format(game_square.pos_x, game_square.pos_y))
     if gotObjective(game_square, objective_square):
         score += 1
@@ -88,6 +116,11 @@ while game_running:
     empty_rect = pygame.Rect(objective_square.pos_x, objective_square.pos_y, 25, 25)
     pygame.draw.rect(game_window, (255, 0, 0), empty_rect, 3)
 
+    text = font.render("Score: " + str(score), True, BLACK)
+    textRect = text.get_rect()
+    textRect.center = (WINDOW_WIDTH // 2, 25)
+
+    game_window.blit(text, textRect)
     # Update display
     pygame.display.update()
 
